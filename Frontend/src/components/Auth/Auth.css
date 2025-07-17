@@ -11,8 +11,13 @@
 .back-link {
   margin-bottom: 1.25rem;
   font-size: 0.9rem;
-  margin-right: 24rem;
+  width: 100%;
+  max-width: 500px;
+  padding-left: 2rem; /* match .auth-card padding */
+  box-sizing: border-box;
 }
+
+
 
 
 .back-link a {
@@ -189,4 +194,10 @@ input.error {
 
 .checkbox-label a:hover {
   text-decoration: underline;
+}
+@media (max-width: 480px) {
+   .back-link {
+    padding-left: 1rem; /* match reduced padding for smaller screens */
+    font-size: 0.85rem;
+  }
 }
