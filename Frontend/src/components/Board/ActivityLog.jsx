@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { actionsAPI } from '../../services/api';
+import { useGroup } from '../../contexts/GroupContext';
+import socketService from '../../services/socket';
 import { 
   FileText, 
   Edit, 
@@ -11,13 +13,17 @@ import {
 import './ActivityLog.css';
 
 const ActivityLog = () => {
+  const { currentGroup } = useGroup();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const listRef = useRef(null);
 
   useEffect(() => {
-    loadActivities();
-  }, []);
+    if (currentGroup) {
+      loadActivities();
+      setupSocketListeners();
+    }
+  }, [currentGroup]);
 
   // Auto-scroll to top when activities change
   useEffect(() => {
@@ -29,13 +35,20 @@ const ActivityLog = () => {
   const loadActivities = async () => {
     try {
       setLoading(true);
-      const response = await actionsAPI.getAll();
+      const response = await actionsAPI.getAll(currentGroup._id);
       setActivities(response.data);
     } catch (error) {
       console.error('Error loading activities:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const setupSocketListeners = () => {
+    // Listen for real-time activity log updates
+    socketService.onActivityLogUpdated((log) => {
+      setActivities(prev => [log, ...prev.slice(0, 19)]); // Keep only 20 items
+    });
   };
 
   const getActionIcon = (action) => {
@@ -102,18 +115,31 @@ const ActivityLog = () => {
     return details;
   };
 
+  if (!currentGroup) {
+    return (
+      <div className="activity-log">
+        <div className="activity-header">
+          <h3>Activity Log</h3>
+        </div>
+        <div className="no-group-message">
+          <p>Select a group to view activities</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="activity-log">
         <div className="activity-header">
           <h3>Activity Log</h3>
-                  <button 
-          className="refresh-btn"
-          onClick={loadActivities}
-          disabled={loading}
-        >
-          <RefreshCw size={16} />
-        </button>
+          <button 
+            className="refresh-btn"
+            onClick={loadActivities}
+            disabled={loading}
+          >
+            <RefreshCw size={16} />
+          </button>
         </div>
         <div className="loading-activities">
           <div className="loading-spinner"></div>

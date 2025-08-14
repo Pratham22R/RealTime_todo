@@ -7,9 +7,11 @@ import DeleteConfirmModal from '../Task/DeleteConfirmModal';
 import ConflictModal from '../Task/ConflictModal';
 import { tasksAPI, updateWithRetry } from '../../services/api';
 import socketService from '../../services/socket';
+import { useGroup } from '../../contexts/GroupContext';
 import './KanbanBoard.css';
 
 const KanbanBoard = () => {
+  const { currentGroup } = useGroup();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -26,18 +28,20 @@ const KanbanBoard = () => {
   ];
 
   useEffect(() => {
-    loadTasks();
-    setupSocketListeners();
+    if (currentGroup) {
+      loadTasks();
+      setupSocketListeners();
+    }
 
     return () => {
       socketService.disconnect();
     };
-  }, []);
+  }, [currentGroup]);
 
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const response = await tasksAPI.getAll();
+      const response = await tasksAPI.getAll(currentGroup._id);
       setTasks(response.data);
     } catch (error) {
       console.error('Error loading tasks:', error);
@@ -49,6 +53,11 @@ const KanbanBoard = () => {
 
   const setupSocketListeners = () => {
     socketService.connect();
+
+    // Join the current group's socket room
+    if (currentGroup) {
+      socketService.emit('join_group', currentGroup._id);
+    }
 
     socketService.onTaskCreated((data) => {
       setTasks(prev => [...prev, data.task]);
@@ -62,6 +71,12 @@ const KanbanBoard = () => {
 
     socketService.onTaskDeleted((data) => {
       setTasks(prev => prev.filter(task => task._id !== data.taskId));
+    });
+
+    // Listen for real-time activity log updates
+    socketService.onActivityLogUpdated((log) => {
+      // This will be handled by the ActivityLog component
+      console.log('Activity log updated:', log);
     });
   };
 
@@ -120,7 +135,11 @@ const KanbanBoard = () => {
 
   const handleCreateTask = async (taskData) => {
     try {
-      await tasksAPI.create(taskData);
+      const taskWithGroup = {
+        ...taskData,
+        groupId: currentGroup._id
+      };
+      await tasksAPI.create(taskWithGroup);
       setShowTaskForm(false);
     } catch (error) {
       console.error('Error creating task:', error);
@@ -235,6 +254,17 @@ const KanbanBoard = () => {
   const getTasksForColumn = (columnId) => {
     return tasks.filter(task => task.status === columnId);
   };
+
+  if (!currentGroup) {
+    return (
+      <div className="kanban-loading">
+        <div className="no-group-message">
+          <h3>No Group Selected</h3>
+          <p>Please select or create a group to start managing tasks.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -1,84 +1,159 @@
-# To-Do Board Backend
+# To-Do Board Backend - Group Support & Real-Time Activity Logs
 
-Real-time collaborative To-Do board backend API built with Node.js, Express, MongoDB, and Socket.IO.
+## Overview
 
-## Features
+This backend now supports multi-group functionality with real-time activity logs using Socket.IO. Users can create groups, join via invite links, and all tasks and activity logs are scoped per group.
 
-- ✅ **Authentication** with JWT and hashed passwords
-- ✅ **Task Management** via REST API
-- ✅ **Real-Time Updates** using Socket.IO
-- ✅ **Action Logging** - stores last 20 user actions
-- ✅ **Conflict Handling** for concurrent edits
-- ✅ **Smart Assign** logic for task assignment
-- ✅ **Task Validation** - unique titles and column name restrictions
+## New Features
 
-## Setup
+### 1. Group Management
+- Create groups with unique invite tokens
+- Join groups via invite links
+- Users can belong to multiple groups
+- All data is scoped per group
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Environment Setup:**
-   Create a `.env` file in the backend directory with:
-   ```
-   MONGODB_URI=mongodb://localhost:27017/todo-board
-   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-   PORT=5000
-   FRONTEND_URL=http://localhost:5173
-   ```
-
-3. **Start MongoDB:**
-   Make sure MongoDB is running on your system.
-
-4. **Run the server:**
-   ```bash
-   # Development mode
-   npm run dev
-   
-   # Production mode
-   npm start
-   ```
+### 2. Real-Time Activity Logs
+- Socket.IO integration for live updates
+- Group-specific rooms for isolated real-time updates
+- Automatic activity logging for all task operations
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
+### Group Management
 
-### Tasks
-- `GET /api/tasks` - Get all tasks
-- `POST /api/tasks` - Create new task
-- `PUT /api/tasks/:id` - Update task
-- `DELETE /api/tasks/:id` - Delete task
+#### Create Group
+```
+POST /api/groups
+Authorization: Bearer <token>
+Body: { "name": "Group Name" }
+Response: Group object with inviteToken
+```
 
-### Actions
-- `GET /api/actions` - Get last 20 action logs
+#### Get User's Groups
+```
+GET /api/groups/my
+Authorization: Bearer <token>
+Response: Array of user's groups
+```
 
-### Users
-- `GET /api/users` - Get all users
+#### Join Group
+```
+POST /api/groups/join
+Authorization: Bearer <token>
+Body: { "token": "invite_token" }
+Response: Group object
+```
+
+### Tasks (Updated)
+
+#### Create Task
+```
+POST /api/tasks
+Authorization: Bearer <token>
+Body: { 
+  "title": "Task Title", 
+  "description": "Description",
+  "priority": "High",
+  "groupId": "group_id_here"
+}
+```
+
+#### Get Tasks
+```
+GET /api/tasks?groupId=<group_id>
+Authorization: Bearer <token>
+Response: Tasks filtered by group
+```
+
+### Activity Logs (Updated)
+
+#### Get Activity Logs
+```
+GET /api/actions?groupId=<group_id>
+Authorization: Bearer <token>
+Response: Activity logs filtered by group
+```
 
 ## Socket.IO Events
 
-- `taskCreated` - Emitted when a task is created
-- `taskUpdated` - Emitted when a task is updated
-- `taskDeleted` - Emitted when a task is deleted
+### Client to Server
+- `join_group`: Join a group room for real-time updates
+- `leave_group`: Leave a group room
+
+### Server to Client
+- `activity_log_updated`: New activity log entry (group-scoped)
+
+## Database Schema Changes
+
+### Group Model
+```javascript
+{
+  name: String (required),
+  creator: ObjectId (ref: User, required),
+  members: [ObjectId] (ref: User),
+  inviteToken: String (unique),
+  timestamps: true
+}
+```
+
+### Task Model (Updated)
+```javascript
+{
+  // ... existing fields
+  group: ObjectId (ref: Group, required)
+}
+```
+
+### ActionLog Model (Updated)
+```javascript
+{
+  // ... existing fields
+  group: ObjectId (ref: Group, required)
+}
+```
+
+## Usage Examples
+
+### Frontend Integration
+
+#### Join Group Room
+```javascript
+// When opening a group's board
+socket.emit('join_group', groupId);
+
+// Listen for activity updates
+socket.on('activity_log_updated', (log) => {
+  console.log('New activity:', log);
+});
+```
+
+#### Leave Group Room
+```javascript
+// When closing a group's board
+socket.emit('leave_group', groupId);
+```
+
+### Invite Link Format
+```
+https://yourapp.com/join/<inviteToken>
+```
+
+## Security Features
+
+- All endpoints require authentication
+- Users can only access groups they're members of
+- Group-scoped data isolation
+- Invite tokens are cryptographically secure
+
+## Error Handling
+
+- 404: Group not found
+- 500: Server errors
+- Proper validation for all inputs
+- Group membership verification
 
 ## Dependencies
 
-- **express** - Web framework
-- **mongoose** - MongoDB ODM
-- **bcryptjs** - Password hashing
-- **jsonwebtoken** - JWT authentication
-- **cors** - Cross-origin resource sharing
-- **dotenv** - Environment variables
-- **socket.io** - Real-time communication
-- **express-validator** - Input validation
-
-## Smart Assign Logic
-
-The system automatically assigns tasks to users with the fewest active tasks (Todo + In Progress) to ensure balanced workload distribution.
-
-## Conflict Handling
-
-When two users edit the same task simultaneously, the system detects version conflicts and returns both versions, allowing users to choose between merge or overwrite. 
+- `crypto`: For generating secure invite tokens
+- `socket.io`: For real-time communication
+- `mongoose`: For database operations 

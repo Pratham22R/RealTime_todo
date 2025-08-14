@@ -2,7 +2,10 @@ import ActionLog from '../models/ActionLog.js';
 
 export const getAllLogs = async (req, res) => {
   try {
-    const logs = await ActionLog.find()
+    const { groupId } = req.query;
+    const filter = groupId ? { group: groupId } : {};
+    
+    const logs = await ActionLog.find(filter)
       .populate('user', 'username')
       .populate('taskId', 'title')
       .sort({ timestamp: -1 })

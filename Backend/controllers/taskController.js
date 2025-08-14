@@ -26,10 +26,11 @@ export const createTask = async (req, res) => {
 
   const task = await Task.create({
     title, description, priority,
-    assignedUser: await getOptimalAssignee()
+    assignedUser: await getOptimalAssignee(),
+    group: req.body.groupId
   });
 
-  await logAction(req.user.userId, 'Task created', task._id, `Created: ${title}`);
+  await logAction(req.user.userId, 'Task created', task._id, req.body.groupId, `Created: ${title}`);
 
   const populated = await task.populate('assignedUser', 'username');
   req.io.emit('taskCreated', { task: populated });
@@ -68,7 +69,7 @@ export const updateTask = async (req, res) => {
   task.version += 1;
 
   await task.save();
-  await logAction(req.user.userId, 'Task updated', task._id, `Updated: ${task.title}`);
+  await logAction(req.user.userId, 'Task updated', task._id, task.group, `Updated: ${task.title}`);
 
   const populated = await task.populate('assignedUser', 'username');
   req.io.emit('taskUpdated', { task: populated });
@@ -80,13 +81,15 @@ export const deleteTask = async (req, res) => {
   const task = await Task.findByIdAndDelete(id);
   if (!task) return res.status(404).json({ message: 'Task not found' });
 
-  await logAction(req.user.userId, 'Task deleted', task._id, `Deleted: ${task.title}`);
+  await logAction(req.user.userId, 'Task deleted', task._id, task.group, `Deleted: ${task.title}`);
   req.io.emit('taskDeleted', { taskId: id });
   res.json({ message: 'Task deleted successfully' });
 };
 
 export const getAllTasks = async (req, res) => {
-  const tasks = await Task.find().populate('assignedUser', 'username');
+  const { groupId } = req.query;
+  const filter = groupId ? { group: groupId } : {};
+  const tasks = await Task.find(filter).populate('assignedUser', 'username');
   res.json(tasks);
 };
 

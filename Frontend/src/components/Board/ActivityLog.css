@@ -157,6 +157,18 @@
   opacity: 0.8;
 }
 
+.no-group-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #718096;
+}
+
+.no-group-message p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
 .loading-activities {
   display: flex;
   flex-direction: column;

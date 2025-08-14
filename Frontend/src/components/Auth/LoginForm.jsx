@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../services/api';
 import './Auth.css';
@@ -15,6 +15,14 @@ const LoginForm = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for redirect message from join link
+  useEffect(() => {
+    if (location.state?.message) {
+      setSubmitError(location.state.message);
+    }
+  }, [location.state]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,7 +71,10 @@ const LoginForm = () => {
     try {
       const response = await authAPI.login(formData);
       login(response.data.user, response.data.token);
-      navigate('/board');
+      
+      // Redirect to the intended destination or board
+      const redirectTo = location.state?.redirectTo || '/board';
+      navigate(redirectTo);
     } catch (error) {
       console.error('Login error:', error);
       setSubmitError(

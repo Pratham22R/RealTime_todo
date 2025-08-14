@@ -1,9 +1,12 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { GroupProvider } from './contexts/GroupContext';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
+import JoinGroup from './components/Auth/JoinGroup';
 import KanbanBoard from './components/Board/KanbanBoard';
 import ActivityLog from './components/Board/ActivityLog';
+import GroupSelector from './components/Board/GroupSelector';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
 import Footer from "./components/Footer";
@@ -37,6 +40,7 @@ const BoardPage = () => {
           <KanbanBoard />
         </div>
         <div className="sidebar">
+          <GroupSelector />
           <ActivityLog />
         </div>
       </div>
@@ -51,23 +55,33 @@ const App = () => {
 
   return (
     <AuthProvider>
-      <div className="app">
-        {!isBoardPage && <Navbar />}
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegisterForm />} />
-          <Route 
-            path="/board" 
-            element={
-              <ProtectedRoute>
-                <BoardPage />
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-        {!isBoardPage && <Footer />}
-      </div>
+      <GroupProvider>
+        <div className="app">
+          {!isBoardPage && <Navbar />}
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/register" element={<RegisterForm />} />
+            <Route 
+              path="/join/:token" 
+              element={
+                <ProtectedRoute>
+                  <JoinGroup />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/board" 
+              element={
+                <ProtectedRoute>
+                  <BoardPage />
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
+          {!isBoardPage && <Footer />}
+        </div>
+      </GroupProvider>
     </AuthProvider>
   );
 };

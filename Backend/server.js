@@ -7,6 +7,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import groupRoutes from './routes/groupRoutes.js';
 import initSocket from './socket/index.js';
 import actionRoutes from './routes/actionRoutes.js';
 
@@ -32,6 +33,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/groups', groupRoutes);
 app.use('/api', actionRoutes);
 
 const PORT = process.env.PORT || 5000;

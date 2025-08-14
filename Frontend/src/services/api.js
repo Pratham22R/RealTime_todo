@@ -45,7 +45,7 @@ export const authAPI = {
 
 // Tasks API calls
 export const tasksAPI = {
-  getAll: () => api.get('/tasks'),
+  getAll: (groupId) => api.get(`/tasks${groupId ? `?groupId=${groupId}` : ''}`),
   get: (id) => api.get(`/tasks/${id}`),
   create: (taskData) => api.post('/tasks', taskData),
   update: (id, taskData) => api.put(`/tasks/${id}`, taskData),
@@ -73,7 +73,14 @@ export const updateWithRetry = async (taskId, data, maxRetries = 3) => {
 
 // Actions API calls
 export const actionsAPI = {
-  getAll: () => api.get('/actions'),
+  getAll: (groupId) => api.get(`/actions${groupId ? `?groupId=${groupId}` : ''}`),
+};
+
+// Groups API calls
+export const groupsAPI = {
+  create: (groupData) => api.post('/groups', groupData),
+  getMyGroups: () => api.get('/groups/my'),
+  join: (token) => api.post('/groups/join', { token }),
 };
 
 // Users API calls
@@ -85,6 +92,7 @@ export default {
   authAPI,
   tasksAPI,
   actionsAPI,
+  groupsAPI,
   usersAPI,
   updateWithRetry
 }; 

@@ -64,6 +64,20 @@ class SocketService {
     }
   }
 
+  // Group management methods
+  emit(event, data) {
+    if (this.socket) {
+      this.socket.emit(event, data);
+    }
+  }
+
+  // Listen for activity log updates
+  onActivityLogUpdated(callback) {
+    if (this.socket) {
+      this.socket.on('activity_log_updated', callback);
+    }
+  }
+
   // Remove event listeners
   offTaskCreated() {
     if (this.socket) {
@@ -80,6 +94,12 @@ class SocketService {
   offTaskDeleted() {
     if (this.socket) {
       this.socket.off('taskDeleted');
+    }
+  }
+
+  offActivityLogUpdated() {
+    if (this.socket) {
+      this.socket.off('activity_log_updated');
     }
   }
 }
