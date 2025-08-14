@@ -72,8 +72,8 @@ const LoginForm = () => {
       const response = await authAPI.login(formData);
       login(response.data.user, response.data.token);
       
-      // Redirect to the intended destination or board
-      const redirectTo = location.state?.redirectTo || '/board';
+      // Redirect to the intended destination or dashboard
+      const redirectTo = location.state?.redirectTo || '/dashboard';
       navigate(redirectTo);
     } catch (error) {
       console.error('Login error:', error);

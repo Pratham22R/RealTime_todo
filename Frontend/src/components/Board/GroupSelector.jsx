@@ -1,24 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGroup } from '../../contexts/GroupContext';
 import './GroupSelector.css';
 
 const GroupSelector = () => {
-  const { groups, currentGroup, selectGroup, createGroup, loading, error } = useGroup();
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newGroupName, setNewGroupName] = useState('');
-
-  const handleCreateGroup = async (e) => {
-    e.preventDefault();
-    if (!newGroupName.trim()) return;
-
-    try {
-      await createGroup({ name: newGroupName.trim() });
-      setNewGroupName('');
-      setShowCreateForm(false);
-    } catch (err) {
-      // Error is handled by the context
-    }
-  };
+  const { groups, currentGroup, selectGroup, createGroup, leaveGroup, loading, error } = useGroup();
+  const navigate = useNavigate();
 
   const handleGroupSelect = (group) => {
     selectGroup(group);
@@ -32,16 +19,28 @@ const GroupSelector = () => {
     );
   }
 
+  // If no groups exist, show message to go to dashboard
+  if (groups.length === 0) {
+    return (
+      <div className="group-selector">
+        <div className="no-groups-message">
+          <h3>No Groups Available</h3>
+          <p>You need to create or join a group first.</p>
+          <button 
+            className="go-to-dashboard-btn"
+            onClick={() => navigate('/dashboard')}
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="group-selector">
       <div className="group-selector-header">
-        <h3>Groups</h3>
-        <button
-          className="btn-create-group"
-          onClick={() => setShowCreateForm(!showCreateForm)}
-        >
-          {showCreateForm ? 'Cancel' : '+ New Group'}
-        </button>
+        <h3>Current Group</h3>
       </div>
 
       {error && (
@@ -51,44 +50,38 @@ const GroupSelector = () => {
         </div>
       )}
 
-      {showCreateForm && (
-        <form className="create-group-form" onSubmit={handleCreateGroup}>
-          <input
-            type="text"
-            placeholder="Enter group name"
-            value={newGroupName}
-            onChange={(e) => setNewGroupName(e.target.value)}
-            disabled={loading}
-          />
-          <button type="submit" disabled={loading || !newGroupName.trim()}>
-            {loading ? 'Creating...' : 'Create'}
-          </button>
-        </form>
-      )}
-
-      <div className="groups-list">
-        {groups.length === 0 ? (
-          <div className="no-groups">
-            <p>No groups yet. Create your first group to get started!</p>
-          </div>
-        ) : (
-          groups.map((group) => (
-            <div
-              key={group._id}
-              className={`group-item ${currentGroup?._id === group._id ? 'active' : ''}`}
-              onClick={() => handleGroupSelect(group)}
-            >
-              <div className="group-info">
-                <span className="group-name">{group.name}</span>
-                <span className="group-members">{group.members?.length || 0} members</span>
-              </div>
-              {currentGroup?._id === group._id && (
-                <div className="current-indicator">✓</div>
-              )}
+      {currentGroup ? (
+        <div className="current-group-display">
+          <div className="group-info-card">
+            <div className="group-header">
+              <h4>{currentGroup.name}</h4>
+              <span className="member-count">{currentGroup.members?.length || 0} members</span>
             </div>
-          ))
-        )}
-      </div>
+            <div className="group-actions">
+              <button 
+                className="leave-group-btn"
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to leave "${currentGroup.name}"?`)) {
+                    leaveGroup(currentGroup._id);
+                  }
+                }}
+              >
+                Leave Group
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="no-group-selected">
+          <p>No group selected</p>
+          <button 
+            className="go-to-dashboard-btn"
+            onClick={() => navigate('/dashboard')}
+          >
+            Select Group
+          </button>
+        </div>
+      )}
 
       {currentGroup && (
         <div className="current-group-info">

@@ -43,3 +43,38 @@ export const joinGroup = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Leave a group
+export const leaveGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const group = await Group.findById(groupId);
+    
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    if (!group.members.includes(req.user.userId)) {
+      return res.status(400).json({ error: 'You are not a member of this group' });
+    }
+
+    // Remove user from group members
+    group.members = group.members.filter(memberId => memberId.toString() !== req.user.userId);
+    
+    // If no members left, delete the group
+    if (group.members.length === 0) {
+      await Group.findByIdAndDelete(groupId);
+      return res.json({ message: 'Group deleted as no members remain' });
+    }
+
+    // If user was the creator, transfer ownership to first remaining member
+    if (group.creator.toString() === req.user.userId) {
+      group.creator = group.members[0];
+    }
+
+    await group.save();
+    res.json({ message: 'Successfully left the group' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

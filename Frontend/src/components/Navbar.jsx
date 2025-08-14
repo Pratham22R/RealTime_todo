@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useLogout } from '../hooks/useLogout';
 import './Navbar.css';
 
-const Navbar = ({ user, logout }) => {
+const Navbar = ({ user }) => {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { logout } = useLogout();
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
   const closeMenu = () => setMenuOpen(false);
@@ -25,6 +27,13 @@ const Navbar = ({ user, logout }) => {
       <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
         {user ? (
           <div className="nav-user-info">
+            <Link 
+              to="/dashboard" 
+              className={`nav-button ${location.pathname === '/dashboard' ? 'active' : ''}`}
+              onClick={closeMenu}
+            >
+              Dashboard
+            </Link>
             <span className="user-greeting">Welcome, {user.username}!</span>
             <button onClick={logout} className="logout-btn">Logout</button>
           </div>

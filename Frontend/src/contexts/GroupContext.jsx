@@ -87,6 +87,36 @@ export const GroupProvider = ({ children }) => {
     setCurrentGroup(group);
   };
 
+  const leaveGroup = async (groupId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await groupsAPI.leave(groupId);
+      
+      // Remove group from user's groups
+      setGroups(prev => prev.filter(g => g._id !== groupId));
+      
+      // If leaving current group, select another group or clear current
+      if (currentGroup?._id === groupId) {
+        const remainingGroups = groups.filter(g => g._id !== groupId);
+        setCurrentGroup(remainingGroups.length > 0 ? remainingGroups[0] : null);
+      }
+      
+      return true;
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to leave group');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearGroups = () => {
+    setGroups([]);
+    setCurrentGroup(null);
+    setError(null);
+  };
+
   const clearError = () => {
     setError(null);
   };
@@ -99,7 +129,9 @@ export const GroupProvider = ({ children }) => {
     createGroup,
     joinGroup,
     selectGroup,
+    leaveGroup,
     loadUserGroups,
+    clearGroups,
     clearError,
   };
 

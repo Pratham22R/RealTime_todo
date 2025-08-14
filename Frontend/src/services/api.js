@@ -81,6 +81,7 @@ export const groupsAPI = {
   create: (groupData) => api.post('/groups', groupData),
   getMyGroups: () => api.get('/groups/my'),
   join: (token) => api.post('/groups/join', { token }),
+  leave: (groupId) => api.delete(`/groups/${groupId}`),
 };
 
 // Users API calls

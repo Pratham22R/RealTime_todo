@@ -4,6 +4,7 @@ import { GroupProvider } from './contexts/GroupContext';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
 import JoinGroup from './components/Auth/JoinGroup';
+import Dashboard from './components/Dashboard/Dashboard';
 import KanbanBoard from './components/Board/KanbanBoard';
 import ActivityLog from './components/Board/ActivityLog';
 import GroupSelector from './components/Board/GroupSelector';
@@ -30,11 +31,11 @@ const ProtectedRoute = ({ children }) => {
 
 // Main Board Component
 const BoardPage = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
     <div className="board-page">
-      <Navbar user={user} logout={logout} />
+      <Navbar user={user} />
       <div className="main-content">
         <div className="board-container">
           <KanbanBoard />
@@ -48,10 +49,22 @@ const BoardPage = () => {
   );
 };
 
+// Dashboard Component
+const DashboardPage = () => {
+  const { user } = useAuth();
+
+  return (
+    <div className="dashboard-page">
+      <Navbar user={user} />
+      <Dashboard />
+    </div>
+  );
+};
+
 // App Component
 const App = () => {
   const location = useLocation();
-  const isBoardPage = location.pathname === '/board';
+  const isBoardPage = location.pathname === '/board' || location.pathname === '/dashboard';
 
   return (
     <AuthProvider>
@@ -67,6 +80,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <JoinGroup />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
                 </ProtectedRoute>
               } 
             />

@@ -3,13 +3,27 @@ import Task from '../models/Task.js';
 import User from '../models/User.js';
 import { logAction } from '../utils/logAction.js';
 
-async function getOptimalAssignee() {
-  const users = await User.find();
-  if (!users.length) return null;
-  const counts = await Promise.all(users.map(async u => ({
-    userId: u._id,
-    count: await Task.countDocuments({ assignedUser: u._id, status: { $in: ['Todo', 'In Progress'] } })
+async function getOptimalAssignee(groupId) {
+  if (!groupId) return null;
+  
+  // Get the group to find its members
+  const Group = (await import('../models/Group.js')).default;
+  const group = await Group.findById(groupId);
+  if (!group || !group.members || group.members.length === 0) return null;
+  
+  // Only consider group members
+  const groupMembers = group.members;
+  if (groupMembers.length === 0) return null;
+  
+  const counts = await Promise.all(groupMembers.map(async memberId => ({
+    userId: memberId,
+    count: await Task.countDocuments({ 
+      assignedUser: memberId, 
+      status: { $in: ['Todo', 'In Progress'] },
+      group: groupId // Only count tasks in this group
+    })
   })));
+  
   return counts.reduce((a, b) => (b.count < a.count ? b : a)).userId;
 }
 
@@ -26,7 +40,7 @@ export const createTask = async (req, res) => {
 
   const task = await Task.create({
     title, description, priority,
-    assignedUser: await getOptimalAssignee(),
+    assignedUser: await getOptimalAssignee(req.body.groupId),
     group: req.body.groupId
   });
 
@@ -57,7 +71,7 @@ export const updateTask = async (req, res) => {
   for (const field of ['title','description','status','priority','assignedUser']) {
   if (updates[field] !== undefined) {
     if (field === 'assignedUser' && updates[field] === '') {
-      task.assignedUser = await getOptimalAssignee(); // ✅ now this works
+      task.assignedUser = await getOptimalAssignee(task.group); // ✅ now this works
     } else {
       task[field] = updates[field];
     }

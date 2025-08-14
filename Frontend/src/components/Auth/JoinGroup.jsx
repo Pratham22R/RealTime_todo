@@ -34,9 +34,9 @@ const JoinGroup = () => {
       await joinGroup(token);
       setJoinStatus('success');
       
-      // Redirect to board after successful join
+      // Redirect to dashboard after successful join
       setTimeout(() => {
-        navigate('/board');
+        navigate('/dashboard');
       }, 2000);
     } catch (err) {
       setJoinStatus('error');
