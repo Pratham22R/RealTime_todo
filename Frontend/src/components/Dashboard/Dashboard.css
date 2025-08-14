@@ -1,54 +1,60 @@
 .dashboard {
-  padding: 24px;
+  padding: 40px 0 40px 0;
   max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
-  background: #f7fafc;
+  background: linear-gradient(90deg, #f8fafc 60%, #e0e7ff 100%);
 }
 
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 32px;
-  padding: 24px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 40px;
+  padding: 40px 40px 40px 48px;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(59,130,246,0.10);
+  border: 1.5px solid #e0e7ff;
 }
 
 .welcome-section h1 {
-  margin: 0 0 8px 0;
-  color: #2d3748;
-  font-size: 28px;
-  font-weight: 700;
+  margin: 0 0 12px 0;
+  color: #2563eb;
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-shadow: 0 2px 8px rgba(59,130,246,0.07);
 }
 
 .welcome-section p {
   margin: 0;
-  color: #718096;
-  font-size: 16px;
+  color: #64748b;
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
 .create-group-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(90deg, #6366f1 0%, #3b82f6 100%);
+  color: #fff;
   border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
+  padding: 16px 38px;
+  border-radius: 14px;
+  font-size: 1.18rem;
+  font-weight: 800;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  gap: 12px;
+  box-shadow: 0 6px 24px rgba(59,130,246,0.16);
+  letter-spacing: 0.5px;
 }
 
 .create-group-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+  transform: translateY(-3px) scale(1.04);
+  background: linear-gradient(90deg, #2563eb 0%, #6366f1 100%);
+  box-shadow: 0 12px 32px rgba(59,130,246,0.22);
 }
 
 /* Join Group Section */

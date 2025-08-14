@@ -1,0 +1,52 @@
+.activity-drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(30, 41, 59, 0.18);
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+.activity-drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.activity-drawer {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 400px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -8px 0 32px rgba(59,130,246,0.13);
+  border-left: 2px solid #e0e7ff;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(0);
+  transition: right 0.3s cubic-bezier(.4,0,.2,1);
+}
+.activity-drawer.open {
+  right: 0;
+}
+.drawer-close-btn {
+  align-self: flex-end;
+  margin: 18px 18px 0 0;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.drawer-close-btn:hover {
+  color: #2563eb;
+}
+.drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 24px 0;
+}

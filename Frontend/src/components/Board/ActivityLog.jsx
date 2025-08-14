@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
-import { actionsAPI } from '../../services/api';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { actionsAPI, usersAPI, tasksAPI } from '../../services/api';
 import { useGroup } from '../../contexts/GroupContext';
 import socketService from '../../services/socket';
-import { 
-  FileText, 
-  Edit, 
-  Trash2, 
-  UserPlus, 
-  LogIn, 
-  RefreshCw 
+import {
+  FileText,
+  Edit,
+  Trash2,
+  UserPlus,
+  LogIn,
+  RefreshCw
 } from 'lucide-react';
 import './ActivityLog.css';
 
@@ -18,21 +18,8 @@ const ActivityLog = () => {
   const [loading, setLoading] = useState(true);
   const listRef = useRef(null);
 
-  useEffect(() => {
-    if (currentGroup) {
-      loadActivities();
-      setupSocketListeners();
-    }
-  }, [currentGroup]);
 
-  // Auto-scroll to top when activities change
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
-  }, [activities]);
-
-  const loadActivities = async () => {
+  const loadActivities = useCallback(async () => {
     try {
       setLoading(true);
       const response = await actionsAPI.getAll(currentGroup._id);
@@ -42,14 +29,50 @@ const ActivityLog = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentGroup]);
 
-  const setupSocketListeners = () => {
-    // Listen for real-time activity log updates
-    socketService.onActivityLogUpdated((log) => {
-      setActivities(prev => [log, ...prev.slice(0, 19)]); // Keep only 20 items
-    });
-  };
+
+  useEffect(() => {
+    if (!currentGroup) return;
+    loadActivities();
+
+    // Handler for real-time activity log updates
+    const handleActivityLog = async (log) => {
+      let enrichedLog = { ...log };
+      try {
+        if (!enrichedLog.user || !enrichedLog.user.username) {
+          if (enrichedLog.user && typeof enrichedLog.user === 'string') {
+            const userRes = await usersAPI.getAll();
+            const found = userRes.data.find(u => u._id === enrichedLog.user);
+            if (found) enrichedLog.user = found;
+          }
+        }
+        if (enrichedLog.taskId && (!enrichedLog.taskId.title)) {
+          if (typeof enrichedLog.taskId === 'string') {
+            const taskRes = await tasksAPI.get(enrichedLog.taskId);
+            if (taskRes.data) enrichedLog.taskId = taskRes.data;
+          }
+        }
+      } catch {
+        // If fetch fails, fallback to original log
+      }
+      setActivities(prev => [enrichedLog, ...prev.slice(0, 19)]);
+    };
+
+    socketService.offActivityLogUpdated(); // Remove any previous listener
+    socketService.onActivityLogUpdated(handleActivityLog);
+
+    return () => {
+      socketService.offActivityLogUpdated();
+    };
+  }, [currentGroup, loadActivities]);
+
+  // Auto-scroll to top when activities change
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = 0;
+    }
+  }, [activities]);
 
   const getActionIcon = (action) => {
     switch (action) {
@@ -105,13 +128,13 @@ const ActivityLog = () => {
 
   const formatDetails = (details) => {
     if (!details) return '';
-    
+
     // Extract task title from details if it exists
     const taskMatch = details.match(/:\s*(.+)$/);
     if (taskMatch) {
       return taskMatch[1];
     }
-    
+
     return details;
   };
 
@@ -133,7 +156,7 @@ const ActivityLog = () => {
       <div className="activity-log">
         <div className="activity-header">
           <h3>Activity Log</h3>
-          <button 
+          <button
             className="refresh-btn"
             onClick={loadActivities}
             disabled={loading}
@@ -153,7 +176,7 @@ const ActivityLog = () => {
     <div className="activity-log">
       <div className="activity-header">
         <h3>Activity Log</h3>
-        <button 
+        <button
           className="refresh-btn"
           onClick={loadActivities}
           title="Refresh activities"
@@ -170,10 +193,10 @@ const ActivityLog = () => {
           </div>
         ) : (
           activities.map((activity, index) => (
-            <div 
-              key={activity._id || index} 
+            <div
+              key={activity._id || index}
               className="activity-item"
-              style={{ 
+              style={{
                 '--action-color': getActionColor(activity.action),
                 animationDelay: `${index * 0.1}s`
               }}
@@ -181,7 +204,7 @@ const ActivityLog = () => {
               <div className="activity-icon">
                 {getActionIcon(activity.action)}
               </div>
-              
+
               <div className="activity-content">
                 <div className="activity-main">
                   <span className="activity-user">
@@ -196,13 +219,13 @@ const ActivityLog = () => {
                     </span>
                   )}
                 </div>
-                
+
                 {activity.details && (
                   <div className="activity-details">
                     {formatDetails(activity.details)}
                   </div>
                 )}
-                
+
                 <div className="activity-time">
                   {formatTimestamp(activity.timestamp)}
                 </div>

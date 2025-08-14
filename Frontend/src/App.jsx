@@ -42,7 +42,6 @@ const BoardPage = () => {
         </div>
         <div className="sidebar">
           <GroupSelector />
-          <ActivityLog />
         </div>
       </div>
     </div>

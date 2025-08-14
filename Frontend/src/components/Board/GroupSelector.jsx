@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGroup } from '../../contexts/GroupContext';
 import './GroupSelector.css';
 
 const GroupSelector = () => {
-  const { groups, currentGroup, selectGroup, createGroup, leaveGroup, loading, error } = useGroup();
+  const { groups, currentGroup, leaveGroup, loading, error } = useGroup();
   const navigate = useNavigate();
 
-  const handleGroupSelect = (group) => {
-    selectGroup(group);
-  };
+
 
   if (loading && groups.length === 0) {
     return (
