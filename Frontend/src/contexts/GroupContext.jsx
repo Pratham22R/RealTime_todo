@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from "../contexts/AuthContext";
 import { groupsAPI } from '../services/api';
-
 const GroupContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGroup = () => {
   const context = useContext(GroupContext);
   if (!context) {
@@ -12,15 +13,19 @@ export const useGroup = () => {
 };
 
 export const GroupProvider = ({ children }) => {
+  const { user, loading: authLoading } = useAuth();
   const [groups, setGroups] = useState([]);
   const [currentGroup, setCurrentGroup] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Load user's groups on mount
+
   useEffect(() => {
-    loadUserGroups();
-  }, []);
+    if (!authLoading && user) {
+      loadUserGroups();
+    }
+  }, [authLoading, user]);
 
   const loadUserGroups = async () => {
     try {
@@ -28,7 +33,7 @@ export const GroupProvider = ({ children }) => {
       setError(null);
       const response = await groupsAPI.getMyGroups();
       setGroups(response.data);
-      
+
       // Set first group as current if no current group is set
       if (response.data.length > 0 && !currentGroup) {
         setCurrentGroup(response.data[0]);
@@ -47,10 +52,10 @@ export const GroupProvider = ({ children }) => {
       setError(null);
       const response = await groupsAPI.create(groupData);
       const newGroup = response.data;
-      
+
       setGroups(prev => [...prev, newGroup]);
       setCurrentGroup(newGroup);
-      
+
       return newGroup;
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create group');
@@ -66,13 +71,13 @@ export const GroupProvider = ({ children }) => {
       setError(null);
       const response = await groupsAPI.join(token);
       const joinedGroup = response.data;
-      
+
       // Check if group already exists in user's groups
       const exists = groups.find(g => g._id === joinedGroup._id);
       if (!exists) {
         setGroups(prev => [...prev, joinedGroup]);
       }
-      
+
       setCurrentGroup(joinedGroup);
       return joinedGroup;
     } catch (err) {
@@ -91,19 +96,19 @@ export const GroupProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      await groupsAPI.leave(groupId);
-      
+      console.log('leaveGroup called with groupId:', groupId);
+      const response = await groupsAPI.leave(groupId);
+      console.log('leaveGroup API response:', response);
       // Remove group from user's groups
       setGroups(prev => prev.filter(g => g._id !== groupId));
-      
       // If leaving current group, select another group or clear current
       if (currentGroup?._id === groupId) {
         const remainingGroups = groups.filter(g => g._id !== groupId);
         setCurrentGroup(remainingGroups.length > 0 ? remainingGroups[0] : null);
       }
-      
       return true;
     } catch (err) {
+      console.error('leaveGroup error:', err);
       setError(err.response?.data?.error || 'Failed to leave group');
       throw err;
     } finally {

@@ -34,6 +34,7 @@ const ActivityLog = () => {
 
   useEffect(() => {
     if (!currentGroup) return;
+    socketService.connect(); // Ensure socket is always connected
     loadActivities();
 
     // Handler for real-time activity log updates

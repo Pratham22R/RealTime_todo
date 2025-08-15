@@ -29,9 +29,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -81,7 +84,11 @@ export const groupsAPI = {
   create: (groupData) => api.post('/groups', groupData),
   getMyGroups: () => api.get('/groups/my'),
   join: (token) => api.post('/groups/join', { token }),
-  leave: (groupId) => api.delete(`/groups/${groupId}`),
+  leave: (groupId) => {
+    const url = `/groups/${groupId}`;
+    console.log('Leaving group, full URL:', api.defaults.baseURL + url);
+    return api.delete(url);
+  },
 };
 
 // Users API calls

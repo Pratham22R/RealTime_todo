@@ -29,9 +29,11 @@ const Navbar = ({ user }) => {
 
         {/* Navigation links */}
         <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
-          <button className="nav-button" onClick={() => setDrawerOpen(true)}>
-            Activity Log
-          </button>
+          {location.pathname === '/board' && (
+            <button className="nav-button" onClick={() => setDrawerOpen(true)}>
+              Activity Log
+            </button>
+          )}
           {user ? (
             <div className="nav-user-info">
               {location.pathname !== '/dashboard' && (

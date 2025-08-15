@@ -58,9 +58,15 @@ const GroupSelector = () => {
             <div className="group-actions">
               <button 
                 className="leave-group-btn"
-                onClick={() => {
+                onClick={async () => {
+                  console.log('Current group object before leave:', currentGroup);
                   if (window.confirm(`Are you sure you want to leave "${currentGroup.name}"?`)) {
-                    leaveGroup(currentGroup._id);
+                    try {
+                      await leaveGroup(currentGroup._id);
+                    } catch (err) {
+                      console.error('Error leaving group:', err);
+                      alert('Error leaving group: ' + (err?.response?.data?.error || err.message));
+                    }
                   }
                 }}
               >

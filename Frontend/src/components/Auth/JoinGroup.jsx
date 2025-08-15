@@ -8,7 +8,7 @@ const JoinGroup = () => {
   const { token } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { joinGroup, loading, error } = useGroup();
+  const { joinGroup, error } = useGroup();
   const [joinStatus, setJoinStatus] = useState('joining');
 
   useEffect(() => {
@@ -39,7 +39,7 @@ const JoinGroup = () => {
         navigate('/dashboard');
       }, 2000);
     } catch (err) {
-      setJoinStatus('error');
+      setJoinStatus(err, 'error');
     }
   };
 
