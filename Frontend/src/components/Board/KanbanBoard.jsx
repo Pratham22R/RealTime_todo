@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Plus, X } from 'lucide-react';
 import TaskCard from '../Task/TaskCard';
 import TaskForm from '../Task/TaskForm';
@@ -8,7 +8,6 @@ import ConflictModal from '../Task/ConflictModal';
 import { tasksAPI, updateWithRetry } from '../../services/api';
 import socketService from '../../services/socket';
 import { useGroup } from '../../contexts/GroupContext';
-import './KanbanBoard.css';
 
 const KanbanBoard = () => {
   const { currentGroup } = useGroup();
@@ -22,9 +21,9 @@ const KanbanBoard = () => {
   const [movingTaskId, setMovingTaskId] = useState(null);
 
   const columns = [
-    { id: 'Todo', title: 'To Do', color: '#e2e8f0' },
-    { id: 'In Progress', title: 'In Progress', color: '#bee3f8' },
-    { id: 'Done', title: 'Done', color: '#c6f6d5' }
+    { id: 'Todo', title: 'To Do', color: 'bg-slate-100' },
+    { id: 'In Progress', title: 'In Progress', color: 'bg-blue-100' },
+    { id: 'Done', title: 'Done', color: 'bg-green-100' },
   ];
 
   useEffect(() => {
@@ -53,39 +52,31 @@ const KanbanBoard = () => {
 
   const setupSocketListeners = () => {
     socketService.connect();
-
-    // Join the current group's socket room
-    if (currentGroup) {
-      socketService.emit('join_group', currentGroup._id);
-    }
+    if (currentGroup) socketService.emit('join_group', currentGroup._id);
 
     socketService.onTaskCreated((data) => {
-      setTasks(prev => [...prev, data.task]);
+      setTasks((prev) => [...prev, data.task]);
     });
 
     socketService.onTaskUpdated((data) => {
-      setTasks(prev => prev.map(task => 
-        task._id === data.task._id ? data.task : task
-      ));
+      setTasks((prev) =>
+        prev.map((task) => (task._id === data.task._id ? data.task : task))
+      );
     });
 
     socketService.onTaskDeleted((data) => {
-      setTasks(prev => prev.filter(task => task._id !== data.taskId));
+      setTasks((prev) => prev.filter((task) => task._id !== data.taskId));
     });
 
-    // Listen for real-time activity log updates
     socketService.onActivityLogUpdated((log) => {
-      // This will be handled by the ActivityLog component
       console.log('Activity log updated:', log);
     });
   };
 
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
-
     const { source, destination, draggableId } = result;
 
-    // If dropped in the same position, do nothing
     if (
       source.droppableId === destination.droppableId &&
       source.index === destination.index
@@ -93,39 +84,33 @@ const KanbanBoard = () => {
       return;
     }
 
-    // Find the task being moved
-    const task = tasks.find(t => t._id === draggableId);
+    const task = tasks.find((t) => t._id === draggableId);
     if (!task) return;
 
-    // Update the task status
     const newStatus = destination.droppableId;
     const prevTasks = [...tasks];
 
-    // Optimistically update UI
-    setTasks(prev => prev.map(t =>
-      t._id === task._id ? { ...t, status: newStatus } : t
-    ));
+    setTasks((prev) =>
+      prev.map((t) => (t._id === task._id ? { ...t, status: newStatus } : t))
+    );
     setMovingTaskId(task._id);
 
     try {
       const response = await updateWithRetry(task._id, {
         status: newStatus,
-        version: task.version
+        version: task.version,
       });
-      setTasks(prev => prev.map(t =>
-        t._id === task._id ? response.data.task : t
-      ));
+      setTasks((prev) =>
+        prev.map((t) => (t._id === task._id ? response.data.task : t))
+      );
     } catch (error) {
-      // Revert on error
       setTasks(prevTasks);
       if (error.response?.status === 409) {
-        // Conflict detected
         setConflictData({
           localTask: { ...task, status: newStatus },
-          serverTask: error.response.data.serverTask
+          serverTask: error.response.data.serverTask,
         });
       } else {
-        console.error('Error updating task:', error);
         setError('Failed to update task');
       }
     } finally {
@@ -135,14 +120,10 @@ const KanbanBoard = () => {
 
   const handleCreateTask = async (taskData) => {
     try {
-      const taskWithGroup = {
-        ...taskData,
-        groupId: currentGroup._id
-      };
+      const taskWithGroup = { ...taskData, groupId: currentGroup._id };
       await tasksAPI.create(taskWithGroup);
       setShowTaskForm(false);
     } catch (error) {
-      console.error('Error creating task:', error);
       setError(error.response?.data?.message || 'Failed to create task');
     }
   };
@@ -151,38 +132,32 @@ const KanbanBoard = () => {
     try {
       const response = await updateWithRetry(editingTask._id, {
         ...taskData,
-        version: editingTask.version
+        version: editingTask.version,
       });
-      
-      setTasks(prev => prev.map(t => 
-        t._id === editingTask._id ? response.data.task : t
-      ));
+      setTasks((prev) =>
+        prev.map((t) => (t._id === editingTask._id ? response.data.task : t))
+      );
       setEditingTask(null);
     } catch (error) {
       if (error.response?.status === 409) {
-        // Conflict detected
         setConflictData({
           localTask: { ...editingTask, ...taskData },
-          serverTask: error.response.data.serverTask
+          serverTask: error.response.data.serverTask,
         });
       } else {
-        console.error('Error updating task:', error);
         setError(error.response?.data?.message || 'Failed to update task');
       }
     }
   };
 
-  const handleDeleteTask = (taskId) => {
-    setDeleteTaskId(taskId);
-  };
+  const handleDeleteTask = (taskId) => setDeleteTaskId(taskId);
 
   const confirmDeleteTask = async () => {
     if (!deleteTaskId) return;
     try {
       await tasksAPI.delete(deleteTaskId);
-      setTasks(prev => prev.filter(t => t._id !== deleteTaskId));
-    } catch (error) {
-      console.error('Error deleting task:', error);
+      setTasks((prev) => prev.filter((t) => t._id !== deleteTaskId));
+    } catch {
       setError('Failed to delete task');
     } finally {
       setDeleteTaskId(null);
@@ -192,22 +167,19 @@ const KanbanBoard = () => {
   const handleSmartAssign = async (taskId) => {
     try {
       const response = await updateWithRetry(taskId, {
-        assignedUser: '', // Empty string triggers smart assign on backend
-        version: tasks.find(t => t._id === taskId)?.version || 1
+        assignedUser: '',
+        version: tasks.find((t) => t._id === taskId)?.version || 1,
       });
-      
-      setTasks(prev => prev.map(t => 
-        t._id === taskId ? response.data.task : t
-      ));
+      setTasks((prev) =>
+        prev.map((t) => (t._id === taskId ? response.data.task : t))
+      );
     } catch (error) {
       if (error.response?.status === 409) {
-        // Conflict detected
         setConflictData({
-          localTask: { ...tasks.find(t => t._id === taskId), assignedUser: '' },
-          serverTask: error.response.data.serverTask
+          localTask: { ...tasks.find((t) => t._id === taskId), assignedUser: '' },
+          serverTask: error.response.data.serverTask,
         });
       } else {
-        console.error('Error smart assigning task:', error);
         setError('Failed to smart assign task');
       }
     }
@@ -218,31 +190,30 @@ const KanbanBoard = () => {
       if (resolution === 'merge') {
         const response = await updateWithRetry(conflictData.localTask._id, {
           ...data,
-          version: conflictData.serverTask.version + 1  // Use server version + 1
+          version: conflictData.serverTask.version + 1,
         });
-        setTasks(prev => prev.map(t => 
-          t._id === conflictData.localTask._id ? response.data.task : t
-        ));
-        setError(''); // Clear any previous errors
+        setTasks((prev) =>
+          prev.map((t) =>
+            t._id === conflictData.localTask._id ? response.data.task : t
+          )
+        );
       } else {
-        // Overwrite - retry the original update with server version + 1
         const response = await updateWithRetry(conflictData.localTask._id, {
           ...conflictData.localTask,
-          version: conflictData.serverTask.version + 1  // Use server version + 1
+          version: conflictData.serverTask.version + 1,
         });
-        setTasks(prev => prev.map(t => 
-          t._id === conflictData.localTask._id ? response.data.task : t
-        ));
-        setError(''); // Clear any previous errors
+        setTasks((prev) =>
+          prev.map((t) =>
+            t._id === conflictData.localTask._id ? response.data.task : t
+          )
+        );
       }
       setConflictData(null);
     } catch (error) {
-      console.error('Error resolving conflict:', error);
       if (error.response?.status === 409) {
-        // Still getting conflicts, update the conflict data
         setConflictData({
           localTask: conflictData.localTask,
-          serverTask: error.response.data.serverTask
+          serverTask: error.response.data.serverTask,
         });
         setError('Conflict still exists. Please try again.');
       } else {
@@ -251,81 +222,114 @@ const KanbanBoard = () => {
     }
   };
 
-  const getTasksForColumn = (columnId) => {
-    return tasks.filter(task => task.status === columnId);
-  };
+  const getTasksForColumn = (columnId) =>
+    tasks.filter((task) => task.status === columnId);
 
   if (!currentGroup) {
     return (
-      <div className="kanban-loading">
-        <div className="no-group-message">
-          <h3>No Group Selected</h3>
-          <p>Please select or create a group to start managing tasks.</p>
-        </div>
+      <div className="flex flex-col items-center justify-center h-full text-gray-600">
+        <h3 className="text-xl font-semibold">No Group Selected</h3>
+        <p className="text-sm">Please select or create a group to start managing tasks.</p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="kanban-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading your board...</p>
+      <div className="flex flex-col items-center justify-center h-full text-gray-500">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full"></div>
+        <p className="mt-2 text-sm">Loading your board...</p>
       </div>
     );
   }
 
   return (
-    <div className="kanban-board">
-      <div className="board-header">
-        <h1>Collaborative To-Do Board</h1>
-        <button 
-          className="add-task-btn"
+    <div className="w-full h-full bg-white rounded-2xl shadow-md p-3 sm:p-4 md:p-6 flex flex-col">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight text-center sm:text-left">
+          Collaborative To-Do Board
+        </h1>
+        <button
           onClick={() => setShowTaskForm(true)}
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 sm:px-5 py-2 rounded-full shadow-lg hover:scale-105 hover:shadow-xl transition transform text-sm sm:text-base"
         >
-          <Plus size={18} />
-          Add Task
+          <Plus size={18} /> Add Task
         </button>
       </div>
 
+      {/* Error Toast */}
       {error && (
-        <div className="error-banner">
-          {error}
-          <button onClick={() => setError('')}>
+        <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-slide-in">
+          <span className="text-sm sm:text-base">{error}</span>
+          <button onClick={() => setError('')} className="hover:text-gray-200">
             <X size={16} />
           </button>
         </div>
       )}
 
+      {/* Columns */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="board-columns">
-          {columns.map(column => (
-            <div key={column.id} className="board-column">
-              <div className="column-header" style={{ backgroundColor: column.color }}>
-                <h3>{column.title}</h3>
-                <span className="task-count">
+        <div
+          className="
+          flex flex-col gap-4
+          sm:grid sm:grid-cols-2
+          md:grid-cols-3 md:gap-6
+          flex-grow
+        "
+        >
+          {columns.map((column) => (
+            <div
+              key={column.id}
+              className="flex flex-col rounded-2xl shadow-sm border border-gray-100 w-full"
+            >
+              {/* Column Header */}
+              <div
+                className={`flex items-center justify-between px-3 sm:px-4 py-2 font-semibold text-gray-700 rounded-t-2xl bg-gradient-to-r ${column.id === 'Todo'
+                    ? 'from-slate-100 to-slate-200'
+                    : column.id === 'In Progress'
+                      ? 'from-blue-100 to-blue-200'
+                      : 'from-green-100 to-green-200'
+                  }`}
+              >
+                <h3 className="text-sm sm:text-base">{column.title}</h3>
+                <span className="bg-white text-gray-700 text-xs px-2 sm:px-3 py-1 rounded-full shadow-sm">
                   {getTasksForColumn(column.id).length}
                 </span>
               </div>
-              
+
+              {/* Droppable Area */}
               <Droppable droppableId={column.id}>
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`column-content ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                    className={`
+                    flex-1 p-2 sm:p-3 min-h-[120px] sm:min-h-[150px]
+                    overflow-y-auto
+                    rounded-b-2xl transition-all duration-200
+                    ${snapshot.isDraggingOver
+                        ? 'bg-blue-50 border-2 border-dashed border-blue-300'
+                        : 'bg-white'}
+                  `}
                   >
-                    {getTasksForColumn(column.id).map((task, index) => (
-                      <TaskCard
-                        key={task._id}
-                        task={task}
-                        index={index}
-                        onEdit={(task) => setEditingTask(task)}
-                        onDelete={handleDeleteTask}
-                        onSmartAssign={handleSmartAssign}
-                        isMoving={movingTaskId === task._id}
-                      />
-                    ))}
+                    {getTasksForColumn(column.id).length === 0 ? (
+                      <div className="flex items-center justify-center h-full text-gray-400 text-xs sm:text-sm italic">
+                        No tasks yet 
+                      </div>
+                    ) : (
+                      getTasksForColumn(column.id).map((task, index) => (
+                        <TaskCard
+                          key={task._id}
+                          task={task}
+                          index={index}
+                          onEdit={(task) => setEditingTask(task)}
+                          onDelete={handleDeleteTask}
+                          onSmartAssign={handleSmartAssign}
+                          isMoving={movingTaskId === task._id}
+                        />
+                      ))
+                    )}
                     {provided.placeholder}
                   </div>
                 )}
@@ -335,25 +339,18 @@ const KanbanBoard = () => {
         </div>
       </DragDropContext>
 
-      {/* Task Form Modal */}
+      {/* Modals */}
       {showTaskForm && (
-        <TaskForm
-          onSubmit={handleCreateTask}
-          onCancel={() => setShowTaskForm(false)}
-        />
+        <TaskForm onSubmit={handleCreateTask} onCancel={() => setShowTaskForm(false)} />
       )}
-
-      {/* Edit Task Form Modal */}
       {editingTask && (
         <TaskForm
           task={editingTask}
           onSubmit={handleEditTask}
           onCancel={() => setEditingTask(null)}
-          isEditing={true}
+          isEditing
         />
       )}
-
-      {/* Conflict Resolution Modal */}
       {conflictData && (
         <ConflictModal
           localTask={conflictData.localTask}
@@ -362,7 +359,6 @@ const KanbanBoard = () => {
           onCancel={() => setConflictData(null)}
         />
       )}
-
       <DeleteConfirmModal
         open={!!deleteTaskId}
         onConfirm={confirmDeleteTask}
@@ -370,6 +366,7 @@ const KanbanBoard = () => {
       />
     </div>
   );
+
 };
 
-export default KanbanBoard; 
+export default KanbanBoard;
